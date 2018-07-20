@@ -13,7 +13,9 @@ const testProperty = 'https://holland2stay.com/residences/kon-wilhelminaplein-29
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--enable-logging', '--v=1'
+            '--enable-logging',
+            '--v=1',
+            '--blink-settings=imagesEnabled=false',
         ]
     })
     console.log(await browser.version())
