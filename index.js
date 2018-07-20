@@ -1,11 +1,12 @@
 const puppeteer = require('puppeteer');
+const conf = require('./conf')
 
 const testLinkAvailable = 'https://holland2stay.com/residences.html?available_to_book=179';
 const testLinkAmsterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=24';
 const testLinkRotterdam = 'https://holland2stay.com/residences.html?city=25';
 const liveLinkRotterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=25';
 const activeLink = testLinkAvailable;
-const testProperty = 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
+const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
 
 (async () => {
 
@@ -19,9 +20,19 @@ const testProperty = 'https://holland2stay.com/residences/kon-wilhelminaplein-29
         ]
     })
     console.log(await browser.version())
+    const page = await browser.newPage();
+
+    // Login
+    const loginLink = 'https://holland2stay.com/customer/account/login/'
+    await page.goto(loginLink, {waitUntil: 'networkidle2'})
+    await page.type('.main .form-login #email', conf.username);
+    await page.type('.main .form-login #pass', conf.pass);
+    await page.evaluate(() => {
+        document.querySelector('.main .form-login button#send2.login[type="submit"]').click()
+    })
+    await page.waitForNavigation()
 
     // Navigate to listings page
-    const page = await browser.newPage();
     await page.goto(activeLink, { waitUntil: 'networkidle2' });
     let listings = await page.$$('.productitem')
     console.info("Available listings:", listings.length)
