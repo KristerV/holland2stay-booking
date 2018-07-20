@@ -83,8 +83,29 @@ const testProperty = 'https://holland2stay.com/residences/kon-wilhelminaplein-29
         console.log(logItem)
     }
 
-    // Book a single property
+    // Booking step 1: set calendar
     await page.goto(bestLink, { waitUntil: 'networkidle2' });
+    page.evaluate(() => {
+        document.querySelector('.ui-datepicker-calendar a').click()
+
+        // Not sure if the website JS is sync or in what order it executes
+        setTimeout(() => {
+            document.querySelector('#product-addtocart-button').click()
+        }, 1000);
+    })
+    page.waitForNavigation({ waitUntil: 'networkidle2'})
+
+    // Booking step 2: place order
+    page.evaluate(() => {
+        document.querySelector('#appmerce_omnikassa_mastercard').click()
+
+        // Prices and stuff is recalculating for a few seconds
+        setTimeout(() => {
+            document.querySelector('button[title="Place Order"]:not([disabled])').click()
+        }, 4000)
+
+    })
+    page.waitForNavigation({ waitUntil: 'networkidle2' })
 
     await browser.close()
 })()
