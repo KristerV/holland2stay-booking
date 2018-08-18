@@ -8,7 +8,7 @@ const liveLinkRotterdam = 'https://holland2stay.com/residences.html?available_to
 const activeLink = testLinkAvailable;
 const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
 
-(async () => {
+async function theDoItAllFunction() {
 
     const browser = await puppeteer.launch({
         args: [
@@ -22,7 +22,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
     console.log(await browser.version())
     const page = await browser.newPage();
 
-    // Login
+    console.info("Login")
     const loginLink = 'https://holland2stay.com/customer/account/login/'
     await page.goto(loginLink, {waitUntil: 'networkidle2'})
     await page.type('.main .form-login #email', conf.username);
@@ -32,7 +32,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
     })
     await page.waitForNavigation()
 
-    // Navigate to listings page
+    console.log("Navigate to listings page")
     await page.goto(activeLink, { waitUntil: 'networkidle2' });
     let listings = await page.$$('.productitem')
     console.info("Available listings:", listings.length)
@@ -40,7 +40,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
     // Nothing to do if no listings
     if (listings.length < 1) return
 
-    // Parse details of listings
+    console.log("Parse details of listings")
     let listingDetails = []
     if (testProperty) listings = []
     for (const item of listings) {
@@ -64,7 +64,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
         listingDetails.push({price, rooms, story, side, link})
     }
 
-    // Score properties from worst to best
+    console.info("Score properties from worst to best")
     /*
         1. Paarisarvuga korteri number
         2. Mida kõrgem korrus seda parem
@@ -96,7 +96,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
         console.log(logItem)
     }
 
-    // Booking step 1: set calendar
+    console.info("Booking step 1: set calendar")
     await page.goto(bestLink, { waitUntil: 'networkidle2' });
     page.evaluate(() => {
         document.querySelector('.ui-datepicker-calendar a').click()
@@ -108,7 +108,7 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
     })
     page.waitForNavigation({ waitUntil: 'networkidle2'})
 
-    // Booking step 2: place order
+    console.info("Booking step 2: place order")
     page.evaluate(() => {
         document.querySelector('#appmerce_omnikassa_mastercard').click()
 
@@ -121,4 +121,18 @@ const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelmin
     page.waitForNavigation({ waitUntil: 'networkidle2' })
 
     await browser.close()
-})()
+    console.info("Booking should have been done.")
+    process.exit(0)
+}
+
+async function start() {
+    await theDoItAllFunction()
+    await sleep(1000 * 5)
+    start()
+}
+
+start()
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
