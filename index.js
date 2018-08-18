@@ -8,29 +8,9 @@ const liveLinkRotterdam = 'https://holland2stay.com/residences.html?available_to
 const activeLink = testLinkRotterdam;
 const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
 
-async function theDoItAllFunction() {
-
-    const browser = await puppeteer.launch({
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--enable-logging',
-            '--v=1',
-            '--blink-settings=imagesEnabled=false',
-        ]
-    })
-    console.log(await browser.version())
-    const page = await browser.newPage();
-
-    console.info("Login")
-    const loginLink = 'https://holland2stay.com/customer/account/login/'
-    await page.goto(loginLink, {waitUntil: 'networkidle2'})
-    await page.type('.main .form-login #email', conf.username);
-    await page.type('.main .form-login #pass', conf.pass);
-    await page.evaluate(() => {
-        document.querySelector('.main .form-login button#send2.login[type="submit"]').click()
-    })
-    await page.waitForNavigation()
+let browser
+let page
+async function bookApartment() {
 
     console.log("Navigate to listings page")
     await page.goto(activeLink, { waitUntil: 'networkidle2' });
@@ -38,7 +18,7 @@ async function theDoItAllFunction() {
     console.info("Available listings:", listings.length)
 
     // Nothing to do if no listings
-    if (listings.length < 1) return
+    if (listings.length < 1) return false
 
     console.log("Parse details of listings")
     let listingDetails = []
@@ -72,7 +52,7 @@ async function theDoItAllFunction() {
 
     if (listingDetails.length < 1) {
         console.log("No listings parsed")
-        return
+        return false
     }
 
     console.info("Score properties from worst to best")
@@ -109,7 +89,7 @@ async function theDoItAllFunction() {
 
     if (!bestLink) {
         console.info("No listing scored > 0")
-        return
+        return false
     }
 
     console.info("Booking step 1: set calendar")
@@ -136,20 +116,64 @@ async function theDoItAllFunction() {
     })
     page.waitForNavigation({ waitUntil: 'networkidle2' })
 
-    await browser.close()
     console.info("Booking should have been done.")
-    process.exit(0)
+    return true
 }
 
+
+async function windUp() {
+    browser = await puppeteer.launch({
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--enable-logging',
+            '--v=1',
+            '--blink-settings=imagesEnabled=false',
+        ]
+    })
+    console.log(await browser.version())
+    page = await browser.newPage();
+
+    console.info("Login")
+    const loginLink = 'https://holland2stay.com/customer/account/login/'
+    await page.goto(loginLink, { waitUntil: 'networkidle2' })
+    await page.type('.main .form-login #email', conf.username);
+    await page.type('.main .form-login #pass', conf.pass);
+    await page.evaluate(() => {
+        document.querySelector('.main .form-login button#send2.login[type="submit"]').click()
+    })
+    await page.waitForNavigation()
+}
+
+async function windDown() {
+    await browser.close()
+}
+
+async function startBooking() {
+    return new Promise(async (res, rej) => {
+        while(true) {
+            try {
+                const success = await bookApartment()
+                if (success === true)
+                    res()
+            } catch (e) {
+                console.error(e)
+            }
+            await sleep(1000 * 5)
+            console.info("---------------------------------")
+        }
+    })
+}
+
+
 async function start() {
-    try {
-        await theDoItAllFunction()
-    } catch(e) {
-        console.error(e)
-    }
-    await sleep(1000 * 5)
-    console.info("---------------------------------")
-    start()
+    console.log("============ Starting processes ============")
+    await windUp()
+    console.log("============     Try booking    ============")
+    await startBooking()
+    console.log("============ Stopping processes ============")
+    await windDown()
+    console.log("============        Done        ============")
 }
 
 start()
