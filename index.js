@@ -5,7 +5,7 @@ const testLinkAvailable = 'https://holland2stay.com/residences.html?available_to
 const testLinkAmsterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=24';
 const testLinkRotterdam = 'https://holland2stay.com/residences.html?city=25';
 const liveLinkRotterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=25';
-const activeLink = testLinkAvailable;
+const activeLink = testLinkRotterdam;
 const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
 
 async function theDoItAllFunction() {
@@ -44,24 +44,35 @@ async function theDoItAllFunction() {
     let listingDetails = []
     if (testProperty) listings = []
     for (const item of listings) {
-        
-        const priceEl = await item.$('.price')
-        const priceContent = await page.evaluate(el => el.innerHTML, priceEl)
-        const price = parseInt(priceContent.replace(/[€,]/g, ''))
-
-        const detailsEl = await item.$('.area.city p')
-        const detailsContent = await page.evaluate(el => el.innerHTML, detailsEl)
-        const rooms = parseInt(detailsContent.match(/\d(?= Room)/g)[0])
 
         const titleEl = await item.$('.product-item-link')
-        const titleContent = await page.evaluate(el => el.innerHTML, titleEl)
-        const aptNo = titleContent.match(/(?!-)\d{3}(?=, )/g)[0]
-        const story = parseInt(aptNo.toString()[0])
-        const side = aptNo.toString()[2] % 2 ? false : true
-
         const link = await page.evaluate(el => el.href, titleEl)
 
-        listingDetails.push({price, rooms, story, side, link})
+        try {
+            const priceEl = await item.$('.price')
+            const priceContent = await page.evaluate(el => el.innerHTML, priceEl)
+            const price = parseInt(priceContent.replace(/[€,]/g, ''))
+
+            const detailsEl = await item.$('.area.city p')
+            const detailsContent = await page.evaluate(el => el.innerHTML, detailsEl)
+            const rooms = parseInt(detailsContent.match(/\d(?= Room)/g)[0])
+
+            const titleContent = await page.evaluate(el => el.innerHTML, titleEl)
+            const aptNo = titleContent.match(/(?!-)\d{3}(?=, )/g)[0]
+            const story = parseInt(aptNo.toString()[0])
+            const side = aptNo.toString()[2] % 2 ? false : true
+
+            listingDetails.push({price, rooms, story, side, link})
+
+        } catch (e) {
+            console.info("Room with bad info:", link)
+            continue
+        }
+    }
+
+    if (listingDetails.length < 1) {
+        console.log("No listings parsed")
+        return
     }
 
     console.info("Score properties from worst to best")
@@ -94,6 +105,11 @@ async function theDoItAllFunction() {
         const logItem = Object.assign({}, item)
         delete logItem.link
         console.log(logItem)
+    }
+
+    if (!bestLink) {
+        console.info("No listing scored > 0")
+        return
     }
 
     console.info("Booking step 1: set calendar")
@@ -132,6 +148,7 @@ async function start() {
         console.error(e)
     }
     await sleep(1000 * 5)
+    console.info("---------------------------------")
     start()
 }
 
