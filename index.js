@@ -126,7 +126,11 @@ async function theDoItAllFunction() {
 }
 
 async function start() {
-    await theDoItAllFunction()
+    try {
+        await theDoItAllFunction()
+    } catch(e) {
+        console.error(e)
+    }
     await sleep(1000 * 5)
     start()
 }
