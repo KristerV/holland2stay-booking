@@ -5,7 +5,7 @@ const testLinkAvailable = 'https://holland2stay.com/residences.html?available_to
 const testLinkAmsterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=24';
 const testLinkRotterdam = 'https://holland2stay.com/residences.html?city=25';
 const liveLinkRotterdam = 'https://holland2stay.com/residences.html?available_to_book=179&city=25';
-const activeLink = testLinkRotterdam;
+const activeLink = liveLinkRotterdam;
 const testProperty = null; // 'https://holland2stay.com/residences/kon-wilhelminaplein-29-k2.html';
 
 let browser
@@ -67,13 +67,15 @@ async function bookApartment() {
 
         item.score = item.rooms + item.story + ((item.side ? 1 : 0) * 3)
         
+        /*
         // Too expensive
-        if (item.price > 1000)
+        if (item.price > 900)
             item.score = 0
 
         // Too low
         if (item.story < 2)
             item.score = 0
+        */
 
         // We'll need this later
         if (item.score > highestScore) {
@@ -133,16 +135,26 @@ async function windUp() {
     })
     console.log(await browser.version())
     page = await browser.newPage();
+    page.setDefaultNavigationTimeout(1000 * 15)
+}
 
-    console.info("Login")
-    const loginLink = 'https://holland2stay.com/customer/account/login/'
-    await page.goto(loginLink, { waitUntil: 'networkidle2' })
-    await page.type('.main .form-login #email', conf.username);
-    await page.type('.main .form-login #pass', conf.pass);
-    await page.evaluate(() => {
-        document.querySelector('.main .form-login button#send2.login[type="submit"]').click()
-    })
-    await page.waitForNavigation()
+async function loginUp() {
+
+    try {
+        const loginLink = 'https://holland2stay.com/customer/account/login/'
+        await page.goto(loginLink, { waitUntil: 'networkidle2' })
+        await page.type('.main .form-login #email', conf.username);
+        await page.type('.main .form-login #pass', conf.pass);
+        await page.evaluate(() => {
+            document.querySelector('.main .form-login button#send2.login[type="submit"]').click()
+        })
+        await page.waitForNavigation()
+        return true
+    } catch (e) {
+        console.info("Login failed.", e.message)
+    }
+    await sleep(1000)
+    await loginUp()
 }
 
 async function windDown() {
@@ -167,8 +179,10 @@ async function startBooking() {
 
 
 async function start() {
-    console.log("============ Starting processes ============")
+    console.log("============  Starting browser  ============")
     await windUp()
+    console.log("============     Logging in     ============")
+    await loginUp()
     console.log("============     Try booking    ============")
     await startBooking()
     console.log("============ Stopping processes ============")
